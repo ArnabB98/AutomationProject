@@ -19,6 +19,7 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 public class MultiScreenshotsSaveToWordFromExcel {
     static WebDriver driver;
@@ -41,14 +42,14 @@ public class MultiScreenshotsSaveToWordFromExcel {
 
             // Perform steps and capture screenshots for each scenario
             driver.findElement(By.xpath("//input[@class='search-box d-none d-sm-block']")).sendKeys(phoneNumber);
-            MultiScreenshotsSaveToWordFromExcel.CaptureScreenshot(driver, ScreenshotNames[array_increment++] = "Homepage_" + phoneNumber);
+            CaptureScreenshot(driver, ScreenshotNames[array_increment++] = "Homepage_" + phoneNumber);
             driver.findElement(By.xpath("//div[@class = 'col-xs-9 col-md-9 paddleft0 home-menu-nav1']/ul/li[2]")).click();
             Thread.sleep(1000);
             driver.findElement(By.xpath("//ul[@id='aboutusSubmenu1']//li//a[@href='contactUs.html'][normalize-space()='Contact Us']")).click();
-            MultiScreenshotsSaveToWordFromExcel.CaptureScreenshot(driver, ScreenshotNames[array_increment++] = "Contact Us_" + phoneNumber);
+            CaptureScreenshot(driver, ScreenshotNames[array_increment++] = "Contact Us_" + phoneNumber);
 
             // Save screenshots to a Word document for each scenario
-            MultiScreenshotsSaveToWordFromExcel.SaveScreenShotsT0WordDocument(phoneNumber + "_TestResult", ScreenshotNames);
+            SaveScreenShotsT0WordDocument(phoneNumber + "_TestResult", ScreenshotNames);
         }
 
         driver.quit();
@@ -80,6 +81,15 @@ public class MultiScreenshotsSaveToWordFromExcel {
     }
 
     public static void CaptureScreenshot(WebDriver driver, String screenshotName) throws IOException {
+        // Add a delay of 10 seconds before taking the screenshot
+        try {
+            System.out.println("Waiting for 10 seconds before taking screenshot...");
+            TimeUnit.SECONDS.sleep(10); // Adjust the delay time as needed
+        } catch (InterruptedException e) {
+            System.out.println("Interrupted during wait: " + e.getMessage());
+            Thread.currentThread().interrupt(); // Reset interrupt flag
+        }
+
         File src = ((FirefoxDriver) driver).getFullPageScreenshotAs(OutputType.FILE);
         String screenshotPath = System.getProperty("user.dir") + "\\Excel_TestResults\\" + screenshotName + ".jpg";
         File dest = new File(screenshotPath);
@@ -131,15 +141,20 @@ public class MultiScreenshotsSaveToWordFromExcel {
                 r.addPicture(new FileInputStream(dest), imgFormat, imgFile, Units.toEMU(width), Units.toEMU(height));
             } catch (Exception e) {
                 System.out.println("Error adding image: " + file + " - " + e.getMessage());
-                continue;
             }
         }
 
+        // Use try-with-resources to ensure the FileOutputStream is closed after writing
         try (FileOutputStream out = new FileOutputStream(screenshotFolderPath + documentName + ".doc")) {
             doc.write(out);
+        } catch (IOException e) {
+            System.out.println("Error saving Word document: " + e.getMessage());
+        } finally {
+            doc.close(); // Close the document to free up resources
         }
         System.out.println("Word document with screenshots created successfully: " + documentName);
     }
+
 
     public static int getImageFormat(String imgFileName) {
         if (imgFileName.endsWith(".emf")) return XWPFDocument.PICTURE_TYPE_EMF;
@@ -156,4 +171,3 @@ public class MultiScreenshotsSaveToWordFromExcel {
         return 0;
     }
 }
-
